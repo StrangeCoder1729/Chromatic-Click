@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Color Detection</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+        }
+        .img-container {
+    position: relative;
+    display: flex; /* Use flexbox for centering */
+    justify-content: center; /* Center horizontally */
+}
+
+.img-container img {
+    max-width: 100%;
+    max-height: 80vh; /* Limit image height to 80% of viewport height */
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px;
+    display: block; /* Ensure image dimensions are respected */
+    margin: 0 auto; /* Center the image horizontally */
+    min-width: 300px; /* Minimum width for the image */
+    min-height: 200px; /* Minimum height for the image */
+}
+
+#color-info {
+    margin-bottom: 1px;
+    padding: 10px;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.8);
+    margin-top: 10px;
+}
+
+    </style>
+    <script>
+        function getColor(e) {
+            const rect = e.target.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const filename = document.getElementById('image').getAttribute('data-filename');
+            console.log(`Coordinates: (${x}, ${y})`);  // Debug output
+
+            fetch('/color', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `x=${Math.round(x)}&y=${Math.round(y)}&filename=${filename}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);  // Debug output
+                if (data.error) {
+                    document.getElementById('color-info').innerText = `Error: ${data.error}`;
+                } else {
+                    document.getElementById('color-info').innerText = `Color: ${data.color_name} (R: ${data.r}, G: ${data.g}, B: ${data.b})`;
+                    document.getElementById('color-info').style.backgroundColor = `rgb(${data.r}, ${data.g}, ${data.b})`;
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Chromatic Click</h1>
+        <form action="/upload" method="post" enctype="multipart/form-data" class="mt-4">
+            <div class="form-group">
+                <label for="file">Upload an Image:</label>
+                <input type="file" name="file" id="file" class="form-control-file">
+            </div>
+            <button type="submit" class="btn btn-primary">Upload</button>
+        </form>
+        {% if filename %}
+            <div id="color-info" class="alert alert-info">Double-click on the image to get color information</div>
+            <div class="img-container">
+                <img id="image" src="{{ url_for('uploaded_file', filename=filename) }}" data-filename="{{ filename }}" ondblclick="getColor(event)">
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
